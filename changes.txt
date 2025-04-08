@@ -1,0 +1,103 @@
+FLUTTER BUDGET TRACKER - DEĞİŞİKLİKLER
+
+1. BudgetScreen Widget'ı StatefulWidget'a Dönüştürüldü
+- StatelessWidget'tan StatefulWidget'a çevrildi
+- _BudgetScreenState sınıfı eklendi
+- SingleTickerProviderStateMixin eklendi (animasyonlar için)
+
+2. Animasyon Kontrolü için Yeni Değişkenler Eklendi
+bool _isGridView = false;
+late AnimationController _animationController;
+late Animation<double> _animation;
+
+3. Yaşam Döngüsü Metodları Eklendi
+- initState(): Animasyon kontrolörü ve animasyon nesnesi başlatılıyor
+- dispose(): Animasyon kontrolörü temizleniyor
+- _toggleView(): Görünüm değiştirme metodu eklendi
+
+4. AppBar'a Yeni Buton Eklendi
+IconButton(
+  icon: Icon(_isGridView ? Icons.list : Icons.grid_view),
+  onPressed: _toggleView,
+)
+
+5. Görünüm Geçiş Animasyonu Eklendi
+AnimatedSwitcher(
+  duration: const Duration(milliseconds: 300),
+  child: _isGridView
+    ? _BudgetGrid(
+        budgets: budgetProvider.budgets,
+        animation: _animation,
+      )
+    : _BudgetList(
+        budgets: budgetProvider.budgets,
+        animation: _animation,
+      ),
+)
+
+6. _BudgetGrid Widget'ı Yeniden Yapılandırıldı
+- Animasyon parametresi eklendi
+- FadeTransition ve SlideTransition eklendi
+- Grid görünümü için özel tasarım yapıldı
+- İki sütunlu grid yapısı
+- Kompakt kart tasarımı
+- Yükseklik/genişlik oranı: 0.85
+
+7. _BudgetList Widget'ı Güncellendi
+- Animasyon parametresi eklendi
+- FadeTransition ve SlideTransition eklendi
+- Liste görünümü için tasarım güncellendi
+- Tek sütunlu liste yapısı
+- Detaylı kart tasarımı
+- Daha fazla bilgi gösterimi
+
+8. Animasyon Özellikleri
+- Her kart için kademeli görünme animasyonu (Interval kullanılarak)
+- Yatay ve dikey kaydırma animasyonları
+- Soldan sağa ve yukarıdan aşağıya geçiş efektleri
+- Opacity (şeffaflık) animasyonları
+- Animasyon süresi: 300ms
+- Easing: easeInOut ve easeOut
+
+9. Dismissible (Silme) Özelliği İyileştirildi
+- Her iki görünümde de silme animasyonu eklendi
+- Silme onayı dialog'u eklendi
+- Geri alma (undo) özelliği eklendi
+- Kırmızı arka plan ve çöp kutusu ikonu
+- Sağdan sola kaydırma hareketi
+
+10. Görsel İyileştirmeler
+Grid Görünümü:
+- 2 sütunlu yapı
+- Kompakt bilgi gösterimi
+- Kare şeklinde kartlar
+- Minimal padding ve spacing
+
+Liste Görünümü:
+- Tek sütunlu yapı
+- Detaylı bilgi gösterimi
+- Geniş kartlar
+- Fazladan bilgi alanları
+- Over budget uyarısı
+
+Ortak İyileştirmeler:
+- Tutarlı padding değerleri
+- Renk şeması optimizasyonu
+- Responsive tasarım
+- İyileştirilmiş okunabilirlik
+- Daha iyi boşluk kullanımı
+
+Eklenen Özellikler:
+1. İki farklı görünüm modu arasında geçiş
+2. Yumuşak ve profesyonel animasyonlar
+3. Gelişmiş kullanıcı deneyimi
+4. Daha iyi veri görselleştirme
+5. Gelişmiş etkileşim özellikleri
+
+Teknik Detaylar:
+- SingleTickerProviderStateMixin kullanımı
+- AnimationController implementasyonu
+- CurvedAnimation kullanımı
+- Interval bazlı animasyon zamanlaması
+- Widget ağacı optimizasyonu
+- State yönetimi iyileştirmesi 
