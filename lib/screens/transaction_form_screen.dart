@@ -17,6 +17,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final _amountController = TextEditingController();
   String _selectedType = 'expense';
   String _selectedCategory = 'Diğer';
+  String _selectedCurrency = 'TRY';
 
   final List<String> _categories = [
     'Yemek',
@@ -29,6 +30,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     'Kuaför',
     'Diğer',
   ];
+
+  final List<String> _currencies = ['TRY', 'USD'];
 
   @override
   void dispose() {
@@ -46,6 +49,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         amount: double.parse(_amountController.text),
         type: _selectedType,
         date: DateTime.now(),
+        currency: _selectedCurrency,
       );
 
       context.read<TransactionProvider>().addTransaction(transaction);
@@ -94,23 +98,52 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _amountController,
-              decoration: const InputDecoration(
-                labelText: 'Miktar',
-                border: OutlineInputBorder(),
-                prefixText: '₺',
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Lütfen bir miktar girin';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'Geçerli bir sayı girin';
-                }
-                return null;
-              },
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _amountController,
+                    decoration: InputDecoration(
+                      labelText: 'Miktar',
+                      border: const OutlineInputBorder(),
+                      prefixText: _selectedCurrency == 'TRY' ? '₺' : '\$',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Lütfen bir miktar girin';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Geçerli bir sayı girin';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _selectedCurrency,
+                    underline: const SizedBox(),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    items: _currencies.map((currency) {
+                      return DropdownMenuItem(
+                        value: currency,
+                        child: Text(currency),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCurrency = value!;
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(

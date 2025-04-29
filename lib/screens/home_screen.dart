@@ -6,8 +6,15 @@ import '../providers/transaction_provider.dart';
 import '../utils/utils.dart';
 import '../screens/transaction_form_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String? _selectedCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -29,52 +36,113 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, provider, child) {
-          final totalBalance = provider.getTotalBalance();
+          final tryBalance = provider.getBalanceByCurrency('TRY');
+          final usdBalance = provider.getBalanceByCurrency('USD');
+          
+          // Filter transactions by category if selected
+          final filteredTransactions = _selectedCategory != null
+              ? provider.getTransactionsByCategory(_selectedCategory!)
+              : provider.transactions;
           
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Toplam Bakiye',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: Colors.grey[600],
+                Row(
+                  children: [
+                    Expanded(
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'TL Bakiye',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '₺${tryBalance.toStringAsFixed(2)}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: tryBalance >= 0 ? Colors.green : Colors.red,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          Utils.formatCurrency(totalBalance),
-                          style: GoogleFonts.poppins(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: totalBalance >= 0 ? Colors.green : Colors.red,
-                          ),
-                        ),
-                      ],
+                      ).animate().fadeIn().slideX(),
                     ),
-                  ),
-                ).animate().fadeIn().slideX(),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'USD Bakiye',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '\$${usdBalance.toStringAsFixed(2)}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: usdBalance >= 0 ? Colors.green : Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ).animate().fadeIn().slideX(),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 24),
-                Text(
-                  'Son İşlemler',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Son İşlemler',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _selectedCategory = _selectedCategory == 'Kuaför' ? null : 'Kuaför';
+                        });
+                      },
+                      icon: Icon(_selectedCategory == 'Kuaför' ? Icons.filter_list_off : Icons.filter_list),
+                      label: Text(_selectedCategory == 'Kuaför' ? 'Tümünü Göster' : 'Kuaför'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _selectedCategory == 'Kuaför' ? Colors.orange : null,
+                        foregroundColor: _selectedCategory == 'Kuaför' ? Colors.white : null,
+                      ),
+                    ),
+                  ],
                 ).animate().fadeIn().slideX(),
                 const SizedBox(height: 16),
-                if (provider.transactions.isEmpty)
+                if (filteredTransactions.isEmpty)
                   Center(
                     child: Text(
-                      'Henüz işlem bulunmuyor',
+                      _selectedCategory != null 
+                          ? 'Bu kategoride işlem bulunmuyor'
+                          : 'Henüz işlem bulunmuyor',
                       style: GoogleFonts.poppins(
                         color: Colors.grey[600],
                       ),
@@ -84,9 +152,9 @@ class HomeScreen extends StatelessWidget {
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: provider.transactions.length,
+                    itemCount: filteredTransactions.length,
                     itemBuilder: (context, index) {
-                      final transaction = provider.transactions[index];
+                      final transaction = filteredTransactions[index];
                       return Card(
                         child: ListTile(
                           leading: CircleAvatar(
@@ -115,7 +183,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           trailing: Text(
-                            Utils.formatCurrency(transaction.amount),
+                            '${transaction.currency == 'TRY' ? '₺' : '\$'}${transaction.amount.toStringAsFixed(2)}',
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               color: transaction.type == 'income'

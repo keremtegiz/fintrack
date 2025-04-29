@@ -58,6 +58,20 @@ class TransactionProvider with ChangeNotifier {
     return total;
   }
 
+  double getBalanceByCurrency(String currency) {
+    double balance = 0;
+    for (var transaction in _transactions) {
+      if (transaction.currency == currency) {
+        if (transaction.type == 'income') {
+          balance += transaction.amount;
+        } else {
+          balance -= transaction.amount;
+        }
+      }
+    }
+    return balance;
+  }
+
   List<Transaction> getTransactionsByCategory(String category) {
     return _transactions.where((t) => t.category == category).toList();
   }
