@@ -42,6 +42,10 @@ dependencies:
   notification_permissions: ^0.6.1 # For notification handling
   google_fonts: ^6.1.0
   flutter_animate: ^4.5.0
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.5.3
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

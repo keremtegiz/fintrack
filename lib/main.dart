@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+// import 'package:firebase_core/firebase_core.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/budget_screen.dart';
+// import 'screens/login_screen.dart';
 import 'models/budget.dart';
 import 'providers/budget_provider.dart';
 import 'providers/transaction_provider.dart';
+import 'services/auth_service.dart';
 
-void main() {
+void main() async {
+  // Flutter Firebase başlatma
+  WidgetsFlutterBinding.ensureInitialized();
+  // await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -18,10 +24,63 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Önce BudgetProvider oluşturuyoruz ve sonra TransactionProvider'a veriyoruz
+    final budgetProvider = BudgetProvider();
+    final transactionProvider = TransactionProvider();
+    
+    // Provider'lar arası entegrasyonu başlatma
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      transactionProvider.setBudgetProvider(budgetProvider);
+      
+      // Örnek veriler tanımlayalım
+      // Bütçeler
+      final budgets = [
+        Budget(
+          id: '1',
+          category: 'Market',
+          limit: 1000,
+          spent: 450,
+          startDate: DateTime.now().subtract(const Duration(days: 15)),
+          endDate: DateTime.now().add(const Duration(days: 15)),
+        ),
+        Budget(
+          id: '2',
+          category: 'Eğlence',
+          limit: 500,
+          spent: 100,
+          startDate: DateTime.now().subtract(const Duration(days: 15)),
+          endDate: DateTime.now().add(const Duration(days: 15)),
+        ),
+        Budget(
+          id: '3',
+          category: 'Ulaşım',
+          limit: 300,
+          spent: 150,
+          startDate: DateTime.now().subtract(const Duration(days: 15)),
+          endDate: DateTime.now().add(const Duration(days: 15)),
+        ),
+        Budget(
+          id: '4',
+          category: 'Kuaför',
+          limit: 1000,
+          spent: 200,
+          startDate: DateTime.now().subtract(const Duration(days: 15)),
+          endDate: DateTime.now().add(const Duration(days: 15)),
+        ),
+      ];
+      
+      // Bütçeleri her iki provider'a da ekle
+      budgetProvider.setBudgets(budgets);
+      
+      // TransactionProvider'ın içindeki _budgets listesini de güncelle
+      transactionProvider.syncBudgetsFromProvider();
+    });
+    
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
-        ChangeNotifierProvider(create: (_) => BudgetProvider()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider.value(value: transactionProvider),
+        ChangeNotifierProvider.value(value: budgetProvider),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -53,7 +112,16 @@ class MyApp extends StatelessWidget {
             unselectedIconTheme: IconThemeData(size: 24),
           ),
         ),
+        // Firebase'i devre dışı bıraktık, doğrudan DashboardScreen'i gösteriyoruz
         home: const DashboardScreen(),
+        /*
+        home: Consumer<AuthService>(
+          builder: (context, authService, _) {
+            // Kullanıcı girişi yapıldıysa DashboardScreen'i, aksi takdirde LoginScreen'i göster
+            return authService.isSignedIn ? const DashboardScreen() : const LoginScreen();
+          },
+        ),
+        */
       ),
     );
   }

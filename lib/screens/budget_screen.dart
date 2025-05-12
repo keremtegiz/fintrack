@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/budget.dart';
 import '../providers/budget_provider.dart';
+import '../providers/transaction_provider.dart';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -16,6 +18,22 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
   bool _isGridView = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
+  final _formKey = GlobalKey<FormState>();
+  final _limitController = TextEditingController();
+  final _categoryController = TextEditingController();
+  String _selectedCategory = 'Diğer';
+  
+  final List<String> _categories = [
+    'Yemek',
+    'Ulaşım',
+    'Alışveriş',
+    'Eğlence',
+    'Sağlık',
+    'Eğitim',
+    'Fatura',
+    'Kuaför',
+    'Diğer',
+  ];
 
   @override
   void initState() {
@@ -34,6 +52,8 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
   @override
   void dispose() {
     _animationController.dispose();
+    _limitController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -45,13 +65,100 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
     });
   }
 
+  void _showBudgetDetails(BuildContext context, Budget budget, double spent) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            '${budget.category} Bütçe Detayı',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  style: GoogleFonts.poppins(color: Colors.black),
+                  children: [
+                    const TextSpan(
+                      text: 'Toplam Bütçe: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text: '₺${budget.limit.toStringAsFixed(2)}',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
+                  style: GoogleFonts.poppins(color: Colors.black),
+                  children: [
+                    const TextSpan(
+                      text: 'Harcanan: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text: '₺${spent.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: spent > budget.limit ? Colors.red : Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
+                  style: GoogleFonts.poppins(color: Colors.black),
+                  children: [
+                    const TextSpan(
+                      text: 'Kalan: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text: '₺${(budget.limit - spent).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: budget.limit - spent < 0 ? Colors.red : Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: budget.limit > 0 ? spent / budget.limit : 1,
+                backgroundColor: Colors.grey[300],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  spent > budget.limit ? Colors.red : const Color(0xFF1D5C42),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text('Kapat', style: GoogleFonts.poppins()),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Budget Tracker',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          'Bütçe Yönetimi',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
         ),
         actions: [
           IconButton(
@@ -60,37 +167,26 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
           ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline, size: 28),
-            onPressed: () => _showAddBudgetDialog(context),
+            onPressed: () => _showAddBudgetForm(context),
           ),
         ],
       ),
-      body: Consumer<BudgetProvider>(
-        builder: (context, budgetProvider, child) {
-          if (budgetProvider.budgets.isEmpty) {
+      body: Consumer2<BudgetProvider, TransactionProvider>(
+        builder: (context, budgetProvider, transactionProvider, child) {
+          final budgets = budgetProvider.budgets;
+          
+          if (budgets.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No budgets set yet',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Your First Budget'),
-                    onPressed: () => _showAddBudgetDialog(context),
-                  ),
-                ],
+              child: Text(
+                'Henüz bütçe tanımı yok',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
               ),
             );
           }
+          
           return RefreshIndicator(
             onRefresh: () async {
               // Implement refresh logic here
@@ -103,18 +199,20 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                     totalBudget: budgetProvider.getTotalBudget(),
                     totalSpent: budgetProvider.getTotalSpent(),
                   ),
-                  if (budgetProvider.budgets.length > 1) 
-                    _BudgetPieChart(budgets: budgetProvider.budgets),
+                  if (budgets.length > 1) 
+                    _BudgetPieChart(budgets: budgets),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: _isGridView
                       ? _BudgetGrid(
-                          budgets: budgetProvider.budgets,
+                          budgets: budgets,
                           animation: _animation,
+                          onBudgetDetailTap: _showBudgetDetails,
                         )
                       : _BudgetList(
-                          budgets: budgetProvider.budgets,
+                          budgets: budgets,
                           animation: _animation,
+                          onBudgetDetailTap: _showBudgetDetails,
                         ),
                   ),
                 ],
@@ -126,25 +224,167 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
     );
   }
 
-  void _showAddBudgetDialog(BuildContext context) {
+  void _showAddBudgetForm(BuildContext context) {
+    // Kategori için ayrı bir controller oluştur
+    final _categoryController = TextEditingController(text: _selectedCategory);
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: _AddBudgetForm(),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Yeni Bütçe',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // DropdownButtonFormField yerine normal TextFormField kullanıyoruz
+              TextFormField(
+                controller: _categoryController,
+                decoration: InputDecoration(
+                  labelText: 'Kategori',
+                  border: const OutlineInputBorder(),
+                  hintText: 'Ör: Yemek, Ulaşım, Alışveriş...',
+                  helperText: 'Bütçe için kategori adını yazın',
+                  suffixIcon: _categories.contains(_categoryController.text)
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : null,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Lütfen bir kategori girin';
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              // Kategori ipuçları
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _categories.map((category) {
+                    final isSelected = category == _categoryController.text;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ActionChip(
+                        label: Text(category),
+                        backgroundColor: isSelected 
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+                          : null,
+                        onPressed: () {
+                          _categoryController.text = category;
+                          setState(() {
+                            _selectedCategory = category;
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _limitController,
+                decoration: const InputDecoration(
+                  labelText: 'Limit (₺)',
+                  border: OutlineInputBorder(),
+                  helperText: 'Bu kategori için ayırdığınız toplam bütçe',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Lütfen bir limit girin';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Geçerli bir sayı girin';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    final budget = Budget(
+                      id: DateTime.now().toString(),
+                      category: _categoryController.text, // Controller'dan al
+                      limit: double.parse(_limitController.text),
+                      spent: 0,
+                      startDate: DateTime.now(),
+                      endDate: DateTime.now().add(const Duration(days: 30)),
+                    );
+                    
+                    context.read<BudgetProvider>().addBudget(budget);
+                    
+                    // Form alanlarını temizle
+                    _limitController.clear();
+                    
+                    Navigator.of(context).pop();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(
+                  'Bütçe Ekle',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    );
+    ).then((_) {
+      // Modal kapandığında controller'ı dispose et
+      _categoryController.dispose();
+    });
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      final budget = Budget(
+        id: DateTime.now().toString(),
+        category: _selectedCategory,
+        limit: double.parse(_limitController.text),
+        spent: 0,
+        startDate: DateTime.now(),
+        endDate: DateTime.now().add(const Duration(days: 30)),
+      );
+      
+      context.read<BudgetProvider>().addBudget(budget);
+      Navigator.of(context).pop();
+      
+      // Form alanlarını temizle
+      _limitController.clear();
+    }
   }
 }
 
@@ -312,15 +552,15 @@ class _BudgetPieChart extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 200,
+              height: 250,
               child: Row(
                 children: [
                   Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: PieChart(
                       PieChartData(
                         sectionsSpace: 2,
-                        centerSpaceRadius: 40,
+                        centerSpaceRadius: 35,
                         sections: budgets.map((budget) {
                           final index = budgets.indexOf(budget);
                           final color = Colors.primaries[index % Colors.primaries.length];
@@ -328,7 +568,7 @@ class _BudgetPieChart extends StatelessWidget {
                             color: color,
                             value: budget.spent,
                             title: '${(budget.spentPercentage).toStringAsFixed(0)}%',
-                            radius: 100,
+                            radius: 90,
                             titleStyle: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -341,6 +581,7 @@ class _BudgetPieChart extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   Expanded(
+                    flex: 2,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: budgets.map((budget) {
@@ -385,10 +626,12 @@ class _BudgetPieChart extends StatelessWidget {
 class _BudgetGrid extends StatelessWidget {
   final List<Budget> budgets;
   final Animation<double> animation;
+  final Function(BuildContext, Budget, double) onBudgetDetailTap;
 
   const _BudgetGrid({
     required this.budgets,
     required this.animation,
+    required this.onBudgetDetailTap,
   });
 
   @override
@@ -469,90 +712,108 @@ class _BudgetGrid extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.2),
-                              border: Border.all(color: color, width: 2),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              budget.category,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+              child: GestureDetector(
+                onDoubleTap: () {
+                  onBudgetDetailTap(context, budget, budget.spent);
+                },
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.2),
+                                border: Border.all(color: color, width: 2),
+                                shape: BoxShape.circle,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Text(
-                        '\$${budget.spent.toStringAsFixed(2)}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                budget.category,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            GestureDetector(
+                              onDoubleTap: () {
+                                onBudgetDetailTap(context, budget, budget.spent);
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.all(4.0),
+                                child: Icon(
+                                  Icons.info_outline,
+                                  color: Colors.grey,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        'of \$${budget.limit.toStringAsFixed(2)}',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 8),
-                      Stack(
-                        children: [
-                          Container(
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                        const Spacer(),
+                        Text(
+                          '\$${budget.spent.toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                          FractionallySizedBox(
-                            widthFactor: budget.spent / budget.limit,
-                            child: Container(
+                        ),
+                        Text(
+                          'of \$${budget.limit.toStringAsFixed(2)}',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 8),
+                        Stack(
+                          children: [
+                            Container(
                               height: 8,
                               decoration: BoxDecoration(
-                                color: budget.isOverBudget ? Colors.red : color,
+                                color: Colors.grey[200],
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
+                            FractionallySizedBox(
+                              widthFactor: budget.spent / budget.limit,
+                              child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: budget.isOverBudget ? Colors.red : color,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: budget.isOverBudget
-                              ? Colors.red.withOpacity(0.1)
-                              : Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${budget.spentPercentage.toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            color: budget.isOverBudget ? Colors.red : Colors.green,
-                            fontWeight: FontWeight.bold,
+                          decoration: BoxDecoration(
+                            color: budget.isOverBudget
+                                ? Colors.red.withOpacity(0.1)
+                                : Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${budget.spentPercentage.toStringAsFixed(1)}%',
+                            style: TextStyle(
+                              color: budget.isOverBudget ? Colors.red : Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -567,10 +828,12 @@ class _BudgetGrid extends StatelessWidget {
 class _BudgetList extends StatelessWidget {
   final List<Budget> budgets;
   final Animation<double> animation;
+  final Function(BuildContext, Budget, double) onBudgetDetailTap;
 
   const _BudgetList({
     required this.budgets,
     required this.animation,
+    required this.onBudgetDetailTap,
   });
 
   @override
@@ -644,103 +907,108 @@ class _BudgetList extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: color.withOpacity(0.2),
-                                  border: Border.all(color: color, width: 2),
-                                  shape: BoxShape.circle,
+              child: GestureDetector(
+                onDoubleTap: () {
+                  onBudgetDetailTap(context, budget, budget.spent);
+                },
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.2),
+                                    border: Border.all(color: color, width: 2),
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  budget.category,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                budget.category,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              decoration: BoxDecoration(
+                                color: budget.isOverBudget
+                                    ? Colors.red.withOpacity(0.1)
+                                    : Colors.green.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${budget.spentPercentage.toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                  color: budget.isOverBudget ? Colors.red : Colors.green,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
                             ),
-                            decoration: BoxDecoration(
-                              color: budget.isOverBudget
-                                  ? Colors.red.withOpacity(0.1)
-                                  : Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '${budget.spentPercentage.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                color: budget.isOverBudget ? Colors.red : Colors.green,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Stack(
-                        children: [
-                          Container(
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          FractionallySizedBox(
-                            widthFactor: budget.spent / budget.limit,
-                            child: Container(
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Stack(
+                          children: [
+                            Container(
                               height: 8,
                               decoration: BoxDecoration(
-                                color: budget.isOverBudget ? Colors.red : color,
+                                color: Colors.grey[200],
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Spent: \$${budget.spent.toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          Text(
-                            'Limit: \$${budget.limit.toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      if (budget.isOverBudget) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Over budget by \$${(budget.spent - budget.limit).toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
+                            FractionallySizedBox(
+                              widthFactor: budget.spent / budget.limit,
+                              child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: budget.isOverBudget ? Colors.red : color,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Spent: \$${budget.spent.toStringAsFixed(2)}',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            Text(
+                              'Limit: \$${budget.limit.toStringAsFixed(2)}',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        if (budget.isOverBudget) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Over budget by \$${(budget.spent - budget.limit).toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -749,84 +1017,5 @@ class _BudgetList extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class _AddBudgetForm extends StatefulWidget {
-  @override
-  _AddBudgetFormState createState() => _AddBudgetFormState();
-}
-
-class _AddBudgetFormState extends State<_AddBudgetForm> {
-  final _formKey = GlobalKey<FormState>();
-  String _category = '';
-  double _limit = 0;
-  DateTime _startDate = DateTime.now();
-  DateTime _endDate = DateTime.now().add(const Duration(days: 30));
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextFormField(
-            decoration: const InputDecoration(labelText: 'Category'),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter a category';
-              }
-              return null;
-            },
-            onSaved: (value) => _category = value!,
-          ),
-          TextFormField(
-            decoration: const InputDecoration(labelText: 'Budget Limit'),
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter a limit';
-              }
-              if (double.tryParse(value) == null) {
-                return 'Please enter a valid number';
-              }
-              return null;
-            },
-            onSaved: (value) => _limit = double.parse(value!),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: _submitForm,
-                child: const Text('Add Budget'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      final newBudget = Budget(
-        id: DateTime.now().toString(),
-        category: _category,
-        limit: _limit,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-      
-      Provider.of<BudgetProvider>(context, listen: false).addBudget(newBudget);
-      Navigator.of(context).pop();
-    }
   }
 } 
