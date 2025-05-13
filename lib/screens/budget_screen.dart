@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/scheduler.dart';
+import 'dart:async';
 import '../models/budget.dart';
 import '../providers/budget_provider.dart';
 import '../providers/transaction_provider.dart';
@@ -225,166 +227,160 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
   }
 
   void _showAddBudgetForm(BuildContext context) {
-    // Kategori için ayrı bir controller oluştur
-    final _categoryController = TextEditingController(text: _selectedCategory);
+    // Herhangi bir state değişkenine dokunmuyoruz
+    final localFormKey = GlobalKey<FormState>();
+    final localLimitController = TextEditingController();
+    String localSelectedCategory = _selectedCategory;
     
-    showModalBottomSheet(
+    // Dialog içinde kullanılacak değişkenlerin durumunu takip etmek için
+    ValueNotifier<String> categoryNotifier = ValueNotifier<String>(localSelectedCategory);
+    
+    // Önce showDialog kullanalım - bottom sheet yerine
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Yeni Bütçe Ekle',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Form(
+              key: localFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Yeni Bütçe',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  // Kategori seçimi
+                  ValueListenableBuilder<String>(
+                    valueListenable: categoryNotifier,
+                    builder: (context, selectedValue, _) {
+                      return DropdownButtonFormField<String>(
+                        value: selectedValue,
+                        decoration: const InputDecoration(
+                          labelText: 'Kategori',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _categories.map((category) {
+                          return DropdownMenuItem(
+                            value: category,
+                            child: Text(category),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            categoryNotifier.value = value;
+                          }
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Lütfen bir kategori seçin';
+                          }
+                          return null;
+                        },
+                      );
+                    },
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
+                  const SizedBox(height: 16),
+                  // Bütçe limiti
+                  TextFormField(
+                    controller: localLimitController,
+                    decoration: const InputDecoration(
+                      labelText: 'Bütçe Limiti',
+                      border: OutlineInputBorder(),
+                      prefixText: '₺',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Lütfen bir limit girin';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Geçerli bir sayı girin';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              // DropdownButtonFormField yerine normal TextFormField kullanıyoruz
-              TextFormField(
-                controller: _categoryController,
-                decoration: InputDecoration(
-                  labelText: 'Kategori',
-                  border: const OutlineInputBorder(),
-                  hintText: 'Ör: Yemek, Ulaşım, Alışveriş...',
-                  helperText: 'Bütçe için kategori adını yazın',
-                  suffixIcon: _categories.contains(_categoryController.text)
-                    ? const Icon(Icons.check_circle, color: Colors.green)
-                    : null,
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Lütfen bir kategori girin';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(
+                'İptal',
+                style: GoogleFonts.poppins(color: Colors.grey[700]),
               ),
-              const SizedBox(height: 8),
-              // Kategori ipuçları
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _categories.map((category) {
-                    final isSelected = category == _categoryController.text;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: ActionChip(
-                        label: Text(category),
-                        backgroundColor: isSelected 
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                          : null,
-                        onPressed: () {
-                          _categoryController.text = category;
-                          setState(() {
-                            _selectedCategory = category;
-                          });
-                        },
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _limitController,
-                decoration: const InputDecoration(
-                  labelText: 'Limit (₺)',
-                  border: OutlineInputBorder(),
-                  helperText: 'Bu kategori için ayırdığınız toplam bütçe',
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Lütfen bir limit girin';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Geçerli bir sayı girin';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
+            ),
+            TextButton(
+              onPressed: () async {
+                if (localFormKey.currentState!.validate()) {
+                  try {
+                    // Önce Budget nesnesini oluştur
                     final budget = Budget(
                       id: DateTime.now().toString(),
-                      category: _categoryController.text, // Controller'dan al
-                      limit: double.parse(_limitController.text),
+                      category: categoryNotifier.value,
+                      limit: double.parse(localLimitController.text),
                       spent: 0,
                       startDate: DateTime.now(),
                       endDate: DateTime.now().add(const Duration(days: 30)),
                     );
                     
-                    context.read<BudgetProvider>().addBudget(budget);
+                    // Provider üzerinden bütçeyi ekle
+                    // Provider.of yerine provider instance'ına doğrudan erişelim
+                    final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
                     
-                    // Form alanlarını temizle
-                    _limitController.clear();
+                    // Navigator'ü kullanmadan önce future ile bir gecikme ekle
+                    await Future.delayed(Duration.zero);
                     
-                    Navigator.of(context).pop();
+                    // Context kullanmadan önce mounted kontrol et
+                    if (!mounted) return;
+                    
+                    // Diyaloğu kapat
+                    Navigator.of(dialogContext).pop();
+                    
+                    // Future içinde provider'a budget ekle
+                    SchedulerBinding.instance.addPostFrameCallback((_) {
+                      budgetProvider.addBudget(budget);
+                      
+                      // Ana widget'ın state'ini güncelle
+                      if (context.mounted) {
+                        setState(() {
+                          _selectedCategory = categoryNotifier.value;
+                        });
+                      }
+                    });
+                  } catch (e) {
+                    // Hata durumunu handle et
+                    print("Budget eklenirken hata: $e");
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Bütçe eklenemedi: $e')),
+                    );
                   }
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  'Bütçe Ekle',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                  ),
+                }
+              },
+              child: Text(
+                'Ekle',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
+          ],
+        );
+      },
     ).then((_) {
-      // Modal kapandığında controller'ı dispose et
-      _categoryController.dispose();
+      // Dialog kapandıktan sonra controller'ı dispose et
+      localLimitController.dispose();
+      categoryNotifier.dispose();
     });
-  }
-
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final budget = Budget(
-        id: DateTime.now().toString(),
-        category: _selectedCategory,
-        limit: double.parse(_limitController.text),
-        spent: 0,
-        startDate: DateTime.now(),
-        endDate: DateTime.now().add(const Duration(days: 30)),
-      );
-      
-      context.read<BudgetProvider>().addBudget(budget);
-      Navigator.of(context).pop();
-      
-      // Form alanlarını temizle
-      _limitController.clear();
-    }
   }
 }
 
@@ -415,14 +411,14 @@ class _BudgetOverviewCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total Budget',
+                      'Toplam Bütçe',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '\$${totalBudget.toStringAsFixed(2)}',
+                      '₺${totalBudget.toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
@@ -439,7 +435,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '${spentPercentage.toStringAsFixed(1)}% used',
+                    '%${spentPercentage.toStringAsFixed(1)} kullanıldı',
                     style: TextStyle(
                       color: (spentPercentage > 90) ? Colors.red : Colors.green,
                       fontWeight: FontWeight.bold,
@@ -465,12 +461,12 @@ class _BudgetOverviewCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _BudgetStatItem(
-                  title: 'Spent',
+                  title: 'Harcanan',
                   amount: totalSpent,
                   color: Colors.orange,
                 ),
                 _BudgetStatItem(
-                  title: 'Remaining',
+                  title: 'Kalan',
                   amount: remainingBudget,
                   color: Colors.green,
                 ),
@@ -519,7 +515,7 @@ class _BudgetStatItem extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '\$${amount.toStringAsFixed(2)}',
+              '₺${amount.toStringAsFixed(2)}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -760,14 +756,14 @@ class _BudgetGrid extends StatelessWidget {
                         ),
                         const Spacer(),
                         Text(
-                          '\$${budget.spent.toStringAsFixed(2)}',
+                          '₺${budget.spent.toStringAsFixed(2)}',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         Text(
-                          'of \$${budget.limit.toStringAsFixed(2)}',
+                          'Toplam: ₺${budget.limit.toStringAsFixed(2)}',
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                         const SizedBox(height: 8),
@@ -988,11 +984,11 @@ class _BudgetList extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Spent: \$${budget.spent.toStringAsFixed(2)}',
+                              'Harcanan: ₺${budget.spent.toStringAsFixed(2)}',
                               style: const TextStyle(color: Colors.grey),
                             ),
                             Text(
-                              'Limit: \$${budget.limit.toStringAsFixed(2)}',
+                              'Limit: ₺${budget.limit.toStringAsFixed(2)}',
                               style: const TextStyle(color: Colors.grey),
                             ),
                           ],
@@ -1000,7 +996,7 @@ class _BudgetList extends StatelessWidget {
                         if (budget.isOverBudget) ...[
                           const SizedBox(height: 8),
                           Text(
-                            'Over budget by \$${(budget.spent - budget.limit).toStringAsFixed(2)}',
+                            'Over budget by ₺${(budget.spent - budget.limit).toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.bold,

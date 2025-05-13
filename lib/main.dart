@@ -157,7 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     BottomNavigationBarItem(
       icon: Icon(Icons.settings_outlined),
       activeIcon: Icon(Icons.settings),
-      label: "Ayarlar"
+      label: "Kur"
     ),
   ];
 
