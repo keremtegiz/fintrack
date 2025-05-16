@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'TL Bakiye',
+                                  'TL',
                                   style: GoogleFonts.poppins(
                                     fontSize: 16,
                                     color: Colors.grey[600],
@@ -181,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'USD Bakiye',
+                                  'USD ',
                                   style: GoogleFonts.poppins(
                                     fontSize: 16,
                                     color: Colors.grey[600],
@@ -230,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen>
                             });
                           },
                           icon: const Icon(Icons.filter_list_off),
-                          label: const Text('Filtreyi Kaldır'),
+                          label: const Text('Remove Filter'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,
@@ -316,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   style: GoogleFonts.poppins(),
                                 ),
                                 action: SnackBarAction(
-                                  label: 'GERI AL',
+                                  label: '',
                                   onPressed: () {
                                     Provider.of<TransactionProvider>(context,
                                             listen: false)
@@ -402,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Bütçe Kategorileri',
+          'Budget Categories',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -463,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ),
                         Text(
-                          '₺${remaining.toStringAsFixed(0)} kaldı',
+                          '₺${remaining.toStringAsFixed(0)} remaining',
                           style: GoogleFonts.poppins(
                             fontSize: 10,
                             color: isOverBudget ? Colors.red : Colors.green,

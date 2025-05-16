@@ -24,18 +24,18 @@ class _BudgetScreenState extends State<BudgetScreen>
   final _formKey = GlobalKey<FormState>();
   final _limitController = TextEditingController();
   final _categoryController = TextEditingController();
-  String _selectedCategory = 'Diğer';
+  String _selectedCategory = 'Other';
 
   final List<String> _categories = [
-    'Yemek',
-    'Ulaşım',
-    'Alışveriş',
-    'Eğlence',
-    'Sağlık',
-    'Eğitim',
-    'Fatura',
-    'Kuaför',
-    'Diğer',
+    'Food',
+    'Transportation',
+    'Shopping',
+    'Entertainment',
+    'Health',
+    'Education',
+    'Bills',
+    'Haircut',
+    'Other',
   ];
 
   @override
@@ -74,7 +74,7 @@ class _BudgetScreenState extends State<BudgetScreen>
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            '${budget.category} Bütçe Detayı',
+            '${budget.category} Budget Details',
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
           ),
           content: Column(
@@ -86,7 +86,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                   style: GoogleFonts.poppins(color: Colors.black),
                   children: [
                     const TextSpan(
-                      text: 'Toplam Bütçe: ',
+                      text: 'Total Budget: ',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     TextSpan(
@@ -101,7 +101,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                   style: GoogleFonts.poppins(color: Colors.black),
                   children: [
                     const TextSpan(
-                      text: 'Harcanan: ',
+                      text: 'Spent: ',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     TextSpan(
@@ -119,7 +119,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                   style: GoogleFonts.poppins(color: Colors.black),
                   children: [
                     const TextSpan(
-                      text: 'Kalan: ',
+                      text: 'Remaining: ',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     TextSpan(
@@ -145,7 +145,7 @@ class _BudgetScreenState extends State<BudgetScreen>
           ),
           actions: [
             TextButton(
-              child: Text('Kapat', style: GoogleFonts.poppins()),
+              child: Text('Close', style: GoogleFonts.poppins()),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],
@@ -159,7 +159,7 @@ class _BudgetScreenState extends State<BudgetScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Bütçe Yönetimi',
+          'Budget Management',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -183,7 +183,7 @@ class _BudgetScreenState extends State<BudgetScreen>
           if (budgets.isEmpty) {
             return Center(
               child: Text(
-                'Henüz bütçe tanımı yok',
+                'No budgets defined yet',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   color: Colors.grey[600],
@@ -283,7 +283,7 @@ class _AddBudgetDialogState extends State<_AddBudgetDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        'Yeni Bütçe Ekle',
+        'Add New Budget',
         style: GoogleFonts.poppins(
           fontSize: 20,
           fontWeight: FontWeight.bold,
@@ -299,7 +299,7 @@ class _AddBudgetDialogState extends State<_AddBudgetDialog> {
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
                 decoration: const InputDecoration(
-                  labelText: 'Kategori',
+                  labelText: 'Category',
                   border: OutlineInputBorder(),
                 ),
                 items: widget.categories.map((category) {
@@ -317,7 +317,7 @@ class _AddBudgetDialogState extends State<_AddBudgetDialog> {
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Lütfen bir kategori seçin';
+                    return 'Please select a category';
                   }
                   return null;
                 },
@@ -326,17 +326,17 @@ class _AddBudgetDialogState extends State<_AddBudgetDialog> {
               TextFormField(
                 controller: _limitController,
                 decoration: const InputDecoration(
-                  labelText: 'Bütçe Limiti',
+                  labelText: 'Budget Limit',
                   border: OutlineInputBorder(),
                   prefixText: '₺',
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Lütfen bir limit girin';
+                    return 'Please enter a limit';
                   }
                   if (double.tryParse(value) == null) {
-                    return 'Geçerli bir sayı girin';
+                    return 'Please enter a valid number';
                   }
                   return null;
                 },
@@ -351,7 +351,7 @@ class _AddBudgetDialogState extends State<_AddBudgetDialog> {
             Navigator.of(context).pop();
           },
           child: Text(
-            'İptal',
+            'Cancel',
             style: GoogleFonts.poppins(color: Colors.grey[700]),
           ),
         ),
@@ -374,17 +374,17 @@ class _AddBudgetDialogState extends State<_AddBudgetDialog> {
                 widget.onBudgetAdded(_selectedCategory);
                 Navigator.of(context).pop();
               } catch (e) {
-                print("Budget eklenirken hata: $e");
+                print("Error adding budget: $e");
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Bütçe eklenemedi: $e')),
+                    SnackBar(content: Text('Failed to add budget: $e')),
                   );
                 }
               }
             }
           },
           child: Text(
-            'Ekle',
+            'Add',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.bold,
             ),
@@ -423,7 +423,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Toplam Bütçe',
+                      'Total Budget',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -448,7 +448,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '%${spentPercentage.toStringAsFixed(1)} kullanıldı',
+                    '%${spentPercentage.toStringAsFixed(1)} used',
                     style: TextStyle(
                       color: (spentPercentage > 90) ? Colors.red : Colors.green,
                       fontWeight: FontWeight.bold,
@@ -474,12 +474,12 @@ class _BudgetOverviewCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _BudgetStatItem(
-                  title: 'Harcanan',
+                  title: 'Spent',
                   amount: totalSpent,
                   color: Colors.orange,
                 ),
                 _BudgetStatItem(
-                  title: 'Kalan',
+                  title: 'Remaining',
                   amount: remainingBudget,
                   color: Colors.green,
                 ),
@@ -561,7 +561,7 @@ class _BudgetPieChart extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 250,
+              height: 200,
               child: Row(
                 children: [
                   Expanded(
@@ -569,7 +569,7 @@ class _BudgetPieChart extends StatelessWidget {
                     child: PieChart(
                       PieChartData(
                         sectionsSpace: 2,
-                        centerSpaceRadius: 35,
+                        centerSpaceRadius: 25,
                         sections: budgets.map((budget) {
                           final index = budgets.indexOf(budget);
                           final color =
@@ -579,9 +579,9 @@ class _BudgetPieChart extends StatelessWidget {
                             value: budget.spent,
                             title:
                                 '${(budget.spentPercentage).toStringAsFixed(0)}%',
-                            radius: 90,
+                            radius: 70,
                             titleStyle: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
@@ -1022,7 +1022,7 @@ class _BudgetList extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Harcanan: ₺${budget.spent.toStringAsFixed(2)}',
+                              'Spent: ₺${budget.spent.toStringAsFixed(2)}',
                               style: const TextStyle(color: Colors.grey),
                             ),
                             Text(

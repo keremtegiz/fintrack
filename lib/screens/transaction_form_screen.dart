@@ -18,19 +18,19 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   String _selectedType = 'expense';
-  String _selectedCategory = 'Diğer';
+  String _selectedCategory = 'Other';
   String _selectedCurrency = 'TRY';
-  
+
   List<String> _categories = [
-    'Yemek',
-    'Ulaşım',
-    'Alışveriş',
-    'Eğlence',
-    'Sağlık',
-    'Eğitim',
-    'Fatura',
-    'Kuaför',
-    'Diğer',
+    'Food',
+    'Transportation',
+    'Shopping',
+    'Entertainment',
+    'Health',
+    'Education',
+    'Bills',
+    'Self Care  ',
+    'Other',
   ];
 
   final List<String> _currencies = ['TRY', 'USD'];
@@ -48,15 +48,18 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   void _loadBudgetCategories() {
     final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
     final budgets = budgetProvider.budgets;
-    
+
     // Bütçe kategorilerini set ile birleştirip uniq olanları al
     final budgetCategories = budgets.map((b) => b.category).toList();
-    
+
     // Eğer bütçeler varsa, kategorileri güncelle
     if (budgetCategories.isNotEmpty) {
       // Önce mevcut sabit kategorileri ve bütçe kategorilerini birleştir
-      final Set<String> uniqueCategories = {..._categories, ...budgetCategories};
-      
+      final Set<String> uniqueCategories = {
+        ..._categories,
+        ...budgetCategories
+      };
+
       setState(() {
         _categories = uniqueCategories.toList();
       });
@@ -84,7 +87,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       // İşlemi ekle
       context.read<TransactionProvider>().addTransaction(transaction);
-      
+
       // Kullanıcıya başarılı mesajı göster
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -92,7 +95,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      
+
       Navigator.of(context).pop();
     }
   }
@@ -100,14 +103,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   // Seçilen kategorinin bir bütçesi olup olmadığını kontrol et
   Widget _buildBudgetInfo() {
     if (_selectedType != 'expense') return const SizedBox.shrink();
-    
+
     return Consumer2<BudgetProvider, TransactionProvider>(
       builder: (context, budgetProvider, transactionProvider, _) {
         // Seçilen kategori için bütçe bilgisini al
         final budget = budgetProvider.budgets.firstWhere(
           (b) => b.category == _selectedCategory,
           orElse: () => Budget(
-            id: '', 
+            id: '',
             category: _selectedCategory,
             limit: 0,
             spent: 0,
@@ -115,14 +118,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             endDate: DateTime.now().add(const Duration(days: 30)),
           ),
         );
-        
+
         if (budget.id.isEmpty) {
           return const SizedBox.shrink();
         }
-        
+
         final amount = double.tryParse(_amountController.text) ?? 0;
-        final remainingBudget = budget.limit - budget.spent - (_selectedType == 'expense' ? amount : 0);
-        
+        final remainingBudget = budget.limit -
+            budget.spent -
+            (_selectedType == 'expense' ? amount : 0);
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Container(
@@ -188,7 +193,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+      padding: EdgeInsets.fromLTRB(
+          16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
       child: Form(
         key: _formKey,
         child: Column(
@@ -199,7 +205,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Yeni İşlem',
+                  'New Transaction',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -215,12 +221,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Başlık',
+                labelText: 'Title',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Lütfen bir başlık girin';
+                  return 'Please enter a title';
                 }
                 return null;
               },
@@ -232,17 +238,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   child: TextFormField(
                     controller: _amountController,
                     decoration: InputDecoration(
-                      labelText: 'Miktar',
+                      labelText: 'Amount',
                       border: const OutlineInputBorder(),
                       prefixText: _selectedCurrency == 'TRY' ? '₺' : '\$',
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Lütfen bir miktar girin';
+                        return 'Please enter an amount';
                       }
                       if (double.tryParse(value) == null) {
-                        return 'Geçerli bir sayı girin';
+                        return 'Please enter a valid number';
                       }
                       return null;
                     },
@@ -281,14 +287,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             DropdownButtonFormField<String>(
               value: _selectedCategory,
               decoration: const InputDecoration(
-                labelText: 'Kategori',
+                labelText: 'Category',
                 border: OutlineInputBorder(),
               ),
               items: _categories.map((category) {
                 // Bütçeli kategorileri işaretle
-                final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
-                final hasBudget = budgetProvider.budgets.any((b) => b.category == category);
-                
+                final budgetProvider =
+                    Provider.of<BudgetProvider>(context, listen: false);
+                final hasBudget =
+                    budgetProvider.budgets.any((b) => b.category == category);
+
                 return DropdownMenuItem(
                   value: category,
                   child: Row(
@@ -297,7 +305,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       if (hasBudget)
                         const Padding(
                           padding: EdgeInsets.only(left: 8.0),
-                          child: Icon(Icons.account_balance_wallet, size: 16, color: Colors.green),
+                          child: Icon(Icons.account_balance_wallet,
+                              size: 16, color: Colors.green),
                         ),
                     ],
                   ),
@@ -314,7 +323,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               children: [
                 Expanded(
                   child: RadioListTile<String>(
-                    title: const Text('Gider'),
+                    title: const Text('Expense'),
                     value: 'expense',
                     groupValue: _selectedType,
                     onChanged: (value) {
@@ -326,7 +335,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 ),
                 Expanded(
                   child: RadioListTile<String>(
-                    title: const Text('Gelir'),
+                    title: const Text('Income'),
                     value: 'income',
                     groupValue: _selectedType,
                     onChanged: (value) {
@@ -344,11 +353,11 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Kaydet'),
+              child: const Text('Save'),
             ),
           ],
         ),
       ),
     );
   }
-} 
+}

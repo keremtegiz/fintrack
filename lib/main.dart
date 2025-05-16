@@ -106,15 +106,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     BottomNavigationBarItem(
         icon: Icon(Icons.home_outlined),
         activeIcon: Icon(Icons.home),
-        label: "Ana Sayfa"),
+        label: "Home"),
     BottomNavigationBarItem(
         icon: Icon(Icons.account_balance_wallet_outlined),
         activeIcon: Icon(Icons.account_balance_wallet),
-        label: "Bütçe"),
+        label: "Budget"),
     BottomNavigationBarItem(
         icon: Icon(Icons.settings_outlined),
         activeIcon: Icon(Icons.settings),
-        label: "Kur"),
+        label: "Currency"),
   ];
 
   void _onItemTapped(int index) {
