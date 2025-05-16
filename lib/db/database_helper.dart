@@ -44,7 +44,7 @@ class DatabaseHelper {
       CREATE TABLE budgets (
         id TEXT PRIMARY KEY,
         category TEXT NOT NULL,
-        limit REAL NOT NULL,
+        budget_limit REAL NOT NULL,
         spent REAL NOT NULL,
         startDate INTEGER NOT NULL,
         endDate INTEGER NOT NULL
@@ -54,20 +54,29 @@ class DatabaseHelper {
 
   // İşlem CRUD işlemleri
   Future<int> insertTransaction(model.Transaction transaction) async {
-    Database db = await database;
-    return await db.insert(
-      'transactions',
-      {
-        'id': transaction.id,
-        'title': transaction.title,
-        'amount': transaction.amount,
-        'category': transaction.category,
-        'type': transaction.type,
-        'date': transaction.date.millisecondsSinceEpoch,
-        'currency': transaction.currency,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    try {
+      print('Veritabanına işlem ekleniyor...');
+      Database db = await database;
+      print('Veritabanı bağlantısı başarılı');
+      final result = await db.insert(
+        'transactions',
+        {
+          'id': transaction.id,
+          'title': transaction.title,
+          'amount': transaction.amount,
+          'category': transaction.category,
+          'type': transaction.type,
+          'date': transaction.date.millisecondsSinceEpoch,
+          'currency': transaction.currency,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print('İşlem başarıyla eklendi. ID: $result');
+      return result;
+    } catch (e) {
+      print('Veritabanı hatası: $e');
+      rethrow;
+    }
   }
 
   Future<List<model.Transaction>> getTransactions() async {
@@ -103,7 +112,7 @@ class DatabaseHelper {
       {
         'id': budget.id,
         'category': budget.category,
-        'limit': budget.limit,
+        'budget_limit': budget.limit,
         'spent': budget.spent,
         'startDate': budget.startDate.millisecondsSinceEpoch,
         'endDate': budget.endDate.millisecondsSinceEpoch,
@@ -119,7 +128,7 @@ class DatabaseHelper {
       return Budget(
         id: maps[i]['id'],
         category: maps[i]['category'],
-        limit: maps[i]['limit'],
+        limit: maps[i]['budget_limit'],
         spent: maps[i]['spent'],
         startDate: DateTime.fromMillisecondsSinceEpoch(maps[i]['startDate']),
         endDate: DateTime.fromMillisecondsSinceEpoch(maps[i]['endDate']),
@@ -145,4 +154,4 @@ class DatabaseHelper {
       whereArgs: [category],
     );
   }
-} 
+}

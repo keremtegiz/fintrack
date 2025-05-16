@@ -16,7 +16,8 @@ class BudgetScreen extends StatefulWidget {
   State<BudgetScreen> createState() => _BudgetScreenState();
 }
 
-class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderStateMixin {
+class _BudgetScreenState extends State<BudgetScreen>
+    with SingleTickerProviderStateMixin {
   bool _isGridView = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -24,7 +25,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
   final _limitController = TextEditingController();
   final _categoryController = TextEditingController();
   String _selectedCategory = 'Diğer';
-  
+
   final List<String> _categories = [
     'Yemek',
     'Ulaşım',
@@ -124,7 +125,9 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                     TextSpan(
                       text: '₺${(budget.limit - spent).toStringAsFixed(2)}',
                       style: TextStyle(
-                        color: budget.limit - spent < 0 ? Colors.red : Colors.green,
+                        color: budget.limit - spent < 0
+                            ? Colors.red
+                            : Colors.green,
                       ),
                     ),
                   ],
@@ -176,7 +179,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
       body: Consumer2<BudgetProvider, TransactionProvider>(
         builder: (context, budgetProvider, transactionProvider, child) {
           final budgets = budgetProvider.budgets;
-          
+
           if (budgets.isEmpty) {
             return Center(
               child: Text(
@@ -188,7 +191,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
               ),
             );
           }
-          
+
           return RefreshIndicator(
             onRefresh: () async {
               // Implement refresh logic here
@@ -201,21 +204,20 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                     totalBudget: budgetProvider.getTotalBudget(),
                     totalSpent: budgetProvider.getTotalSpent(),
                   ),
-                  if (budgets.length > 1) 
-                    _BudgetPieChart(budgets: budgets),
+                  if (budgets.length > 1) _BudgetPieChart(budgets: budgets),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: _isGridView
-                      ? _BudgetGrid(
-                          budgets: budgets,
-                          animation: _animation,
-                          onBudgetDetailTap: _showBudgetDetails,
-                        )
-                      : _BudgetList(
-                          budgets: budgets,
-                          animation: _animation,
-                          onBudgetDetailTap: _showBudgetDetails,
-                        ),
+                        ? _BudgetGrid(
+                            budgets: budgets,
+                            animation: _animation,
+                            onBudgetDetailTap: _showBudgetDetails,
+                          )
+                        : _BudgetList(
+                            budgets: budgets,
+                            animation: _animation,
+                            onBudgetDetailTap: _showBudgetDetails,
+                          ),
                   ),
                 ],
               ),
@@ -227,160 +229,169 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
   }
 
   void _showAddBudgetForm(BuildContext context) {
-    // Herhangi bir state değişkenine dokunmuyoruz
-    final localFormKey = GlobalKey<FormState>();
-    final localLimitController = TextEditingController();
-    String localSelectedCategory = _selectedCategory;
-    
-    // Dialog içinde kullanılacak değişkenlerin durumunu takip etmek için
-    ValueNotifier<String> categoryNotifier = ValueNotifier<String>(localSelectedCategory);
-    
-    // Önce showDialog kullanalım - bottom sheet yerine
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(
-            'Yeni Bütçe Ekle',
+      builder: (dialogContext) => _AddBudgetDialog(
+        initialCategory: _selectedCategory,
+        categories: _categories,
+        onBudgetAdded: (category) {
+          if (mounted) {
+            setState(() {
+              _selectedCategory = category;
+            });
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _AddBudgetDialog extends StatefulWidget {
+  final String initialCategory;
+  final List<String> categories;
+  final Function(String) onBudgetAdded;
+
+  const _AddBudgetDialog({
+    required this.initialCategory,
+    required this.categories,
+    required this.onBudgetAdded,
+  });
+
+  @override
+  State<_AddBudgetDialog> createState() => _AddBudgetDialogState();
+}
+
+class _AddBudgetDialogState extends State<_AddBudgetDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _limitController = TextEditingController();
+  late String _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategory = widget.initialCategory;
+  }
+
+  @override
+  void dispose() {
+    _limitController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        'Yeni Bütçe Ekle',
+        style: GoogleFonts.poppins(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'Kategori',
+                  border: OutlineInputBorder(),
+                ),
+                items: widget.categories.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedCategory = value;
+                    });
+                  }
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Lütfen bir kategori seçin';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _limitController,
+                decoration: const InputDecoration(
+                  labelText: 'Bütçe Limiti',
+                  border: OutlineInputBorder(),
+                  prefixText: '₺',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Lütfen bir limit girin';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Geçerli bir sayı girin';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Text(
+            'İptal',
+            style: GoogleFonts.poppins(color: Colors.grey[700]),
+          ),
+        ),
+        TextButton(
+          onPressed: () async {
+            if (_formKey.currentState!.validate()) {
+              try {
+                final budget = Budget(
+                  id: DateTime.now().toString(),
+                  category: _selectedCategory,
+                  limit: double.parse(_limitController.text),
+                  spent: 0,
+                  startDate: DateTime.now(),
+                  endDate: DateTime.now().add(const Duration(days: 30)),
+                );
+
+                final budgetProvider =
+                    Provider.of<BudgetProvider>(context, listen: false);
+                await budgetProvider.addBudget(budget);
+                widget.onBudgetAdded(_selectedCategory);
+                Navigator.of(context).pop();
+              } catch (e) {
+                print("Budget eklenirken hata: $e");
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Bütçe eklenemedi: $e')),
+                  );
+                }
+              }
+            }
+          },
+          child: Text(
+            'Ekle',
             style: GoogleFonts.poppins(
-              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          content: SingleChildScrollView(
-            child: Form(
-              key: localFormKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Kategori seçimi
-                  ValueListenableBuilder<String>(
-                    valueListenable: categoryNotifier,
-                    builder: (context, selectedValue, _) {
-                      return DropdownButtonFormField<String>(
-                        value: selectedValue,
-                        decoration: const InputDecoration(
-                          labelText: 'Kategori',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: _categories.map((category) {
-                          return DropdownMenuItem(
-                            value: category,
-                            child: Text(category),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            categoryNotifier.value = value;
-                          }
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Lütfen bir kategori seçin';
-                          }
-                          return null;
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Bütçe limiti
-                  TextFormField(
-                    controller: localLimitController,
-                    decoration: const InputDecoration(
-                      labelText: 'Bütçe Limiti',
-                      border: OutlineInputBorder(),
-                      prefixText: '₺',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Lütfen bir limit girin';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Geçerli bir sayı girin';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: Text(
-                'İptal',
-                style: GoogleFonts.poppins(color: Colors.grey[700]),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (localFormKey.currentState!.validate()) {
-                  try {
-                    // Önce Budget nesnesini oluştur
-                    final budget = Budget(
-                      id: DateTime.now().toString(),
-                      category: categoryNotifier.value,
-                      limit: double.parse(localLimitController.text),
-                      spent: 0,
-                      startDate: DateTime.now(),
-                      endDate: DateTime.now().add(const Duration(days: 30)),
-                    );
-                    
-                    // Provider üzerinden bütçeyi ekle
-                    // Provider.of yerine provider instance'ına doğrudan erişelim
-                    final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
-                    
-                    // Navigator'ü kullanmadan önce future ile bir gecikme ekle
-                    await Future.delayed(Duration.zero);
-                    
-                    // Context kullanmadan önce mounted kontrol et
-                    if (!mounted) return;
-                    
-                    // Diyaloğu kapat
-                    Navigator.of(dialogContext).pop();
-                    
-                    // Future içinde provider'a budget ekle
-                    SchedulerBinding.instance.addPostFrameCallback((_) {
-                      budgetProvider.addBudget(budget);
-                      
-                      // Ana widget'ın state'ini güncelle
-                      if (context.mounted) {
-                        setState(() {
-                          _selectedCategory = categoryNotifier.value;
-                        });
-                      }
-                    });
-                  } catch (e) {
-                    // Hata durumunu handle et
-                    print("Budget eklenirken hata: $e");
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Bütçe eklenemedi: $e')),
-                    );
-                  }
-                }
-              },
-              child: Text(
-                'Ekle',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    ).then((_) {
-      // Dialog kapandıktan sonra controller'ı dispose et
-      localLimitController.dispose();
-      categoryNotifier.dispose();
-    });
+        ),
+      ],
+    );
   }
 }
 
@@ -396,7 +407,8 @@ class _BudgetOverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final remainingBudget = totalBudget - totalSpent;
-    final spentPercentage = totalBudget > 0 ? (totalSpent / totalBudget * 100) : 0.0;
+    final spentPercentage =
+        totalBudget > 0 ? (totalSpent / totalBudget * 100) : 0.0;
 
     return Card(
       child: Padding(
@@ -413,16 +425,17 @@ class _BudgetOverviewCard extends StatelessWidget {
                     Text(
                       'Toplam Bütçe',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '₺${totalBudget.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                     ),
                   ],
                 ),
@@ -498,8 +511,8 @@ class _BudgetStatItem extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey[600],
-          ),
+                color: Colors.grey[600],
+              ),
         ),
         const SizedBox(height: 4),
         Row(
@@ -517,8 +530,8 @@ class _BudgetStatItem extends StatelessWidget {
             Text(
               '₺${amount.toStringAsFixed(2)}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ],
         ),
@@ -543,8 +556,8 @@ class _BudgetPieChart extends StatelessWidget {
             Text(
               'Spending Distribution',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -559,11 +572,13 @@ class _BudgetPieChart extends StatelessWidget {
                         centerSpaceRadius: 35,
                         sections: budgets.map((budget) {
                           final index = budgets.indexOf(budget);
-                          final color = Colors.primaries[index % Colors.primaries.length];
+                          final color =
+                              Colors.primaries[index % Colors.primaries.length];
                           return PieChartSectionData(
                             color: color,
                             value: budget.spent,
-                            title: '${(budget.spentPercentage).toStringAsFixed(0)}%',
+                            title:
+                                '${(budget.spentPercentage).toStringAsFixed(0)}%',
                             radius: 90,
                             titleStyle: const TextStyle(
                               fontSize: 14,
@@ -582,7 +597,8 @@ class _BudgetPieChart extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: budgets.map((budget) {
                         final index = budgets.indexOf(budget);
-                        final color = Colors.primaries[index % Colors.primaries.length];
+                        final color =
+                            Colors.primaries[index % Colors.primaries.length];
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
@@ -646,7 +662,7 @@ class _BudgetGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         final budget = budgets[index];
         final color = Colors.primaries[index % Colors.primaries.length];
-        
+
         return FadeTransition(
           opacity: animation,
           child: SlideTransition(
@@ -670,7 +686,8 @@ class _BudgetGrid extends StatelessWidget {
                   builder: (BuildContext context) {
                     return AlertDialog(
                       title: const Text('Delete Budget'),
-                      content: Text('Are you sure you want to delete ${budget.category} budget?'),
+                      content: Text(
+                          'Are you sure you want to delete ${budget.category} budget?'),
                       actions: <Widget>[
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(false),
@@ -686,14 +703,16 @@ class _BudgetGrid extends StatelessWidget {
                 );
               },
               onDismissed: (direction) {
-                Provider.of<BudgetProvider>(context, listen: false).deleteBudget(budget.id);
+                Provider.of<BudgetProvider>(context, listen: false)
+                    .deleteBudget(budget.id);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('${budget.category} budget deleted'),
                     action: SnackBarAction(
                       label: 'UNDO',
                       onPressed: () {
-                        Provider.of<BudgetProvider>(context, listen: false).addBudget(budget);
+                        Provider.of<BudgetProvider>(context, listen: false)
+                            .addBudget(budget);
                       },
                     ),
                   ),
@@ -733,15 +752,19 @@ class _BudgetGrid extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 budget.category,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             GestureDetector(
                               onDoubleTap: () {
-                                onBudgetDetailTap(context, budget, budget.spent);
+                                onBudgetDetailTap(
+                                    context, budget, budget.spent);
                               },
                               child: const Padding(
                                 padding: EdgeInsets.all(4.0),
@@ -757,10 +780,13 @@ class _BudgetGrid extends StatelessWidget {
                         const Spacer(),
                         Text(
                           '₺${budget.spent.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                         ),
                         Text(
                           'Toplam: ₺${budget.limit.toStringAsFixed(2)}',
@@ -781,7 +807,8 @@ class _BudgetGrid extends StatelessWidget {
                               child: Container(
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: budget.isOverBudget ? Colors.red : color,
+                                  color:
+                                      budget.isOverBudget ? Colors.red : color,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -803,7 +830,9 @@ class _BudgetGrid extends StatelessWidget {
                           child: Text(
                             '${budget.spentPercentage.toStringAsFixed(1)}%',
                             style: TextStyle(
-                              color: budget.isOverBudget ? Colors.red : Colors.green,
+                              color: budget.isOverBudget
+                                  ? Colors.red
+                                  : Colors.green,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -841,7 +870,7 @@ class _BudgetList extends StatelessWidget {
       itemBuilder: (context, index) {
         final budget = budgets[index];
         final color = Colors.primaries[index % Colors.primaries.length];
-        
+
         return FadeTransition(
           opacity: animation,
           child: SlideTransition(
@@ -865,7 +894,8 @@ class _BudgetList extends StatelessWidget {
                   builder: (BuildContext context) {
                     return AlertDialog(
                       title: const Text('Delete Budget'),
-                      content: Text('Are you sure you want to delete ${budget.category} budget?'),
+                      content: Text(
+                          'Are you sure you want to delete ${budget.category} budget?'),
                       actions: <Widget>[
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(false),
@@ -881,14 +911,16 @@ class _BudgetList extends StatelessWidget {
                 );
               },
               onDismissed: (direction) {
-                Provider.of<BudgetProvider>(context, listen: false).deleteBudget(budget.id);
+                Provider.of<BudgetProvider>(context, listen: false)
+                    .deleteBudget(budget.id);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('${budget.category} budget deleted'),
                     action: SnackBarAction(
                       label: 'UNDO',
                       onPressed: () {
-                        Provider.of<BudgetProvider>(context, listen: false).addBudget(budget);
+                        Provider.of<BudgetProvider>(context, listen: false)
+                            .addBudget(budget);
                       },
                     ),
                   ),
@@ -930,9 +962,12 @@ class _BudgetList extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   budget.category,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ],
                             ),
@@ -950,7 +985,9 @@ class _BudgetList extends StatelessWidget {
                               child: Text(
                                 '${budget.spentPercentage.toStringAsFixed(1)}%',
                                 style: TextStyle(
-                                  color: budget.isOverBudget ? Colors.red : Colors.green,
+                                  color: budget.isOverBudget
+                                      ? Colors.red
+                                      : Colors.green,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -972,7 +1009,8 @@ class _BudgetList extends StatelessWidget {
                               child: Container(
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: budget.isOverBudget ? Colors.red : color,
+                                  color:
+                                      budget.isOverBudget ? Colors.red : color,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -1014,4 +1052,4 @@ class _BudgetList extends StatelessWidget {
       },
     );
   }
-} 
+}

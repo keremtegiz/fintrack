@@ -6,7 +6,7 @@ class AuthService with ChangeNotifier {
   // final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isSignedIn = true; // Test için otomatik giriş yapmış kabul ediyoruz
   String? _userId = "test_user_id";
-  
+
   // Geçerli kullanıcıyı al
   User? get currentUser => null; // Mock için null
 
@@ -14,7 +14,8 @@ class AuthService with ChangeNotifier {
   bool get isSignedIn => _isSignedIn;
 
   // Kullanıcı durumu değişikliklerini dinle
-  Stream<User?> get authStateChanges => Stream.value(null); // Mock için boş stream
+  Stream<User?> get authStateChanges =>
+      Stream.value(null); // Mock için boş stream
 
   // E-posta ve şifre ile kayıt ol
   Future<UserCredential?> signUpWithEmailAndPassword(
@@ -45,4 +46,4 @@ class AuthService with ChangeNotifier {
     _isSignedIn = false;
     notifyListeners();
   }
-} 
+}

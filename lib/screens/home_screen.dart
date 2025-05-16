@@ -14,7 +14,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   String? _selectedCategory;
   late AnimationController _animationController;
   Animation<double>? _tryAnimation;
@@ -29,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    
+
     _tryAnimation = Tween<double>(
       begin: 0,
       end: 0,
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _usdAnimation = Tween<double>(
       begin: 0,
       end: 0,
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _animationController.addListener(() {
       setState(() {});
     });
@@ -58,7 +59,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _setupAnimations(double tryBalance, double usdBalance) {
-    if (_displayedTryBalance != tryBalance || _displayedUsdBalance != usdBalance) {
+    if (_displayedTryBalance != tryBalance ||
+        _displayedUsdBalance != usdBalance) {
       _tryAnimation = Tween<double>(
         begin: _displayedTryBalance,
         end: tryBalance,
@@ -66,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         parent: _animationController,
         curve: Curves.easeOutCubic,
       ));
-      
+
       _usdAnimation = Tween<double>(
         begin: _displayedUsdBalance,
         end: usdBalance,
@@ -74,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         parent: _animationController,
         curve: Curves.easeOutCubic,
       ));
-      
+
       _displayedTryBalance = tryBalance;
       _displayedUsdBalance = usdBalance;
       _animationController.forward(from: 0);
@@ -103,18 +105,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         builder: (context, transactionProvider, budgetProvider, child) {
           final tryBalance = transactionProvider.getBalanceByCurrency('TRY');
           final usdBalance = transactionProvider.getBalanceByCurrency('USD');
-          
+
           // Setup animations for balance values
           _setupAnimations(tryBalance, usdBalance);
-          
+
           // Filter transactions by category if selected
           final filteredTransactions = _selectedCategory != null
-              ? transactionProvider.getTransactionsByCategory(_selectedCategory!)
+              ? transactionProvider
+                  .getTransactionsByCategory(_selectedCategory!)
               : transactionProvider.transactions;
-          
+
           // Get budgets for the category chips
           final budgets = budgetProvider.budgets;
-          
+
           return RefreshIndicator(
             onRefresh: () async {
               // Simulating a refresh operation
@@ -159,7 +162,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   style: GoogleFonts.poppins(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: tryBalance >= 0 ? Colors.green : Colors.red,
+                                    color: tryBalance >= 0
+                                        ? Colors.green
+                                        : Colors.red,
                                   ),
                                 ),
                               ],
@@ -188,7 +193,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   style: GoogleFonts.poppins(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: usdBalance >= 0 ? Colors.green : Colors.red,
+                                    color: usdBalance >= 0
+                                        ? Colors.green
+                                        : Colors.red,
                                   ),
                                 ),
                               ],
@@ -199,13 +206,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Bütçe Kategorileri
-                  if (budgets.isNotEmpty) 
-                    _buildBudgetCategories(budgets),
-                  
+                  if (budgets.isNotEmpty) _buildBudgetCategories(budgets),
+
                   const SizedBox(height: 24),
-                  
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -236,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   if (filteredTransactions.isEmpty)
                     Center(
                       child: Text(
-                        _selectedCategory != null 
+                        _selectedCategory != null
                             ? 'Bu kategoride işlem bulunmuyor'
                             : 'Henüz işlem bulunmuyor',
                         style: GoogleFonts.poppins(
@@ -268,8 +274,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
-                                  title: Text('İşlemi Sil', 
-                                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                                  title: Text(
+                                    'İşlemi Sil',
+                                    style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.bold),
                                   ),
                                   content: Text(
                                     '${transaction.title} işlemini silmek istediğinizden emin misiniz?',
@@ -277,14 +285,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   ),
                                   actions: [
                                     TextButton(
-                                      child: Text('İptal', style: GoogleFonts.poppins()),
-                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: Text('İptal',
+                                          style: GoogleFonts.poppins()),
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
                                     ),
                                     TextButton(
-                                      child: Text('Sil', 
-                                        style: GoogleFonts.poppins(color: Colors.red),
+                                      child: Text(
+                                        'Sil',
+                                        style: GoogleFonts.poppins(
+                                            color: Colors.red),
                                       ),
-                                      onPressed: () => Navigator.of(context).pop(true),
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
                                     ),
                                   ],
                                 );
@@ -292,9 +305,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             );
                           },
                           onDismissed: (direction) {
-                            Provider.of<TransactionProvider>(context, listen: false)
+                            Provider.of<TransactionProvider>(context,
+                                    listen: false)
                                 .removeTransaction(transaction.id);
-                            
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
@@ -304,7 +318,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 action: SnackBarAction(
                                   label: 'GERI AL',
                                   onPressed: () {
-                                    Provider.of<TransactionProvider>(context, listen: false)
+                                    Provider.of<TransactionProvider>(context,
+                                            listen: false)
                                         .addTransaction(transaction);
                                   },
                                 ),
@@ -342,13 +357,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     ),
                                   ),
                                   // Eğer işlem bir bütçe kategorisine aitse, bütçe simgesi göster
-                                  if (budgets.any((b) => b.category == transaction.category))
+                                  if (budgets.any((b) =>
+                                      b.category == transaction.category))
                                     Padding(
                                       padding: const EdgeInsets.only(left: 4.0),
                                       child: Icon(
                                         Icons.account_balance_wallet,
                                         size: 14,
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                       ),
                                     ),
                                 ],
@@ -379,7 +397,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   // Bütçe kategorilerini chips olarak gösteren widget
   Widget _buildBudgetCategories(List<dynamic> budgets) {
     if (budgets.isEmpty) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -403,10 +421,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   label: Text(
                     'Tümü',
                     style: GoogleFonts.poppins(
-                      fontWeight: _selectedCategory == null ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: _selectedCategory == null
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
-                  backgroundColor: _selectedCategory == null ? Theme.of(context).colorScheme.primary.withOpacity(0.2) : null,
+                  backgroundColor: _selectedCategory == null
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+                      : null,
                   onPressed: () {
                     setState(() {
                       _selectedCategory = null;
@@ -418,12 +440,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 // Her bir bütçe için kalan miktarı hesapla
                 final remaining = budget.limit - budget.spent;
                 final isOverBudget = remaining < 0;
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: ActionChip(
                     avatar: Icon(
-                      isOverBudget ? Icons.warning : Icons.account_balance_wallet,
+                      isOverBudget
+                          ? Icons.warning
+                          : Icons.account_balance_wallet,
                       size: 18,
                       color: isOverBudget ? Colors.red : Colors.green,
                     ),
@@ -433,7 +457,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         Text(
                           budget.category,
                           style: GoogleFonts.poppins(
-                            fontWeight: _selectedCategory == budget.category ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: _selectedCategory == budget.category
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                         Text(
@@ -448,9 +474,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                     backgroundColor: _selectedCategory == budget.category
                         ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                        : isOverBudget 
-                          ? Colors.red.withOpacity(0.1) 
-                          : Colors.green.withOpacity(0.1),
+                        : isOverBudget
+                            ? Colors.red.withOpacity(0.1)
+                            : Colors.green.withOpacity(0.1),
                     onPressed: () {
                       setState(() {
                         _selectedCategory = budget.category;

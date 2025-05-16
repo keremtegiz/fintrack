@@ -5,23 +5,22 @@ import '../db/database_helper.dart';
 import '../providers/budget_provider.dart';
 
 class TransactionProvider with ChangeNotifier {
-  // Mocklamak için _dbHelper'ı yorum satırı yapıyoruz
-  // final DatabaseHelper _dbHelper = DatabaseHelper();
+  final DatabaseHelper _dbHelper = DatabaseHelper();
   List<Transaction> _transactions = [];
   List<Budget> _budgets = [];
-  
+
   // BudgetProvider referansını tutacak değişken
   BudgetProvider? _budgetProvider;
 
   List<Transaction> get transactions => _transactions;
   List<Budget> get budgets => _budgets;
-  
+
   // BudgetProvider ile entegrasyon için metod
   void setBudgetProvider(BudgetProvider budgetProvider) {
     _budgetProvider = budgetProvider;
     _syncBudgets();
   }
-  
+
   // BudgetProvider'dan bütçeleri senkronize etme metodu
   void _syncBudgets() {
     if (_budgetProvider != null) {
@@ -29,7 +28,7 @@ class TransactionProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // Main.dart'ta çağrılacak senkronizasyon metodu
   void syncBudgetsFromProvider() {
     _syncBudgets();
@@ -37,55 +36,10 @@ class TransactionProvider with ChangeNotifier {
 
   // Tüm verileri veritabanından yükleme
   Future<void> loadData() async {
-    // Veritabanını kullanmak yerine örnek veriler ekleyelim
-    // _transactions = await _dbHelper.getTransactions();
-    // _budgets = await _dbHelper.getBudgets();
-    
-    // Örnek veriler
-    _transactions = [
-      Transaction(
-        id: '1',
-        title: 'Maaş',
-        amount: 10000,
-        category: 'Maaş',
-        type: 'income',
-        date: DateTime.now().subtract(const Duration(days: 2)),
-        currency: 'TRY',
-      ),
-      Transaction(
-        id: '2',
-        title: 'Market Alışverişi',
-        amount: 450,
-        category: 'Market',
-        type: 'expense',
-        date: DateTime.now().subtract(const Duration(days: 1)),
-        currency: 'TRY',
-      ),
-      Transaction(
-        id: '3',
-        title: 'Kira',
-        amount: 3500,
-        category: 'Konut',
-        type: 'expense',
-        date: DateTime.now().subtract(const Duration(days: 5)),
-        currency: 'TRY',
-      ),
-      Transaction(
-        id: '4',
-        title: 'Saç Bakım',
-        amount: 200,
-        category: 'Kuaför',
-        type: 'expense',
-        date: DateTime.now().subtract(const Duration(days: 3)),
-        currency: 'TRY',
-      ),
-    ];
-    
-    // BudgetProvider'dan bütçeleri alacağımız için burada bütçe yüklemeye gerek yok
+    _transactions = await _dbHelper.getTransactions();
     if (_budgetProvider != null) {
       _syncBudgets();
     }
-    
     notifyListeners();
   }
 
@@ -95,16 +49,19 @@ class TransactionProvider with ChangeNotifier {
   }
 
   Future<void> addTransaction(Transaction transaction) async {
-    // SQLite veritabanına kaydet
-    // await _dbHelper.insertTransaction(transaction);
-    
-    // Belleğe ekle
-    _transactions.add(transaction);
-    
-    // Bütçeyi güncelle
-    _updateBudget(transaction);
-    
-    notifyListeners();
+    try {
+      print('İşlem ekleniyor: ${transaction.title}');
+      await _dbHelper.insertTransaction(transaction);
+      print('Veritabanına kaydedildi');
+      _transactions.add(transaction);
+      print('Listeye eklendi. Toplam işlem sayısı: ${_transactions.length}');
+      await _updateBudget(transaction);
+      print('Bütçe güncellendi');
+      notifyListeners();
+      print('UI güncellendi');
+    } catch (e) {
+      print('Hata oluştu: $e');
+    }
   }
 
   Future<void> _updateBudget(Transaction transaction) async {
@@ -112,10 +69,11 @@ class TransactionProvider with ChangeNotifier {
     if (_budgetProvider != null) {
       _syncBudgets();
     }
-    
+
     // Bu kategoride bir bütçe var mı kontrol et
-    int existingBudgetIndex = _budgets.indexWhere((b) => b.category == transaction.category);
-    
+    int existingBudgetIndex =
+        _budgets.indexWhere((b) => b.category == transaction.category);
+
     if (existingBudgetIndex != -1) {
       // Eğer bu kategoride bir bütçe varsa, spent değerini güncelle
       Budget existingBudget = _budgets[existingBudgetIndex];
@@ -128,16 +86,10 @@ class TransactionProvider with ChangeNotifier {
           startDate: existingBudget.startDate,
           endDate: existingBudget.endDate,
         );
-        
-        // SQLite veritabanını güncelle
-        // await _dbHelper.updateBudgetSpent(
-        //  transaction.category, 
-        //  existingBudget.spent + transaction.amount
-        // );
-        
+
         // Belleği güncelle
         _budgets[existingBudgetIndex] = updatedBudget;
-        
+
         // BudgetProvider'ı da güncelle
         if (_budgetProvider != null) {
           _budgetProvider!.updateBudget(updatedBudget);
@@ -148,23 +100,21 @@ class TransactionProvider with ChangeNotifier {
   }
 
   Future<void> addBudget(Budget budget) async {
-    int existingIndex = _budgets.indexWhere((b) => b.category == budget.category);
-    
-    // SQLite veritabanına kaydet
-    // await _dbHelper.insertBudget(budget);
-    
+    int existingIndex =
+        _budgets.indexWhere((b) => b.category == budget.category);
+
     // Belleği güncelle
     if (existingIndex != -1) {
       _budgets[existingIndex] = budget;
     } else {
       _budgets.add(budget);
     }
-    
+
     // BudgetProvider'ı da güncelle
     if (_budgetProvider != null) {
       _budgetProvider!.addBudget(budget);
     }
-    
+
     notifyListeners();
   }
 
@@ -203,7 +153,7 @@ class TransactionProvider with ChangeNotifier {
     if (_budgetProvider != null) {
       _syncBudgets();
     }
-    
+
     final budget = _budgets.firstWhere(
       (b) => b.category == category,
       orElse: () => Budget(
@@ -217,26 +167,23 @@ class TransactionProvider with ChangeNotifier {
     );
     return budget.spent;
   }
-  
+
   Future<void> removeTransaction(String id) async {
     int index = _transactions.indexWhere((t) => t.id == id);
     if (index != -1) {
       final transaction = _transactions[index];
-      
-      // SQLite veritabanından sil
-      // await _dbHelper.deleteTransaction(id);
-      
-      // Belleğden sil
+      await _dbHelper.deleteTransaction(id);
       _transactions.removeAt(index);
-      
+
       // Bütçe güncelleme (eğer silinen işlem bir gider ise)
       if (transaction.type == 'expense') {
         // Önce BudgetProvider'dan güncel bütçeleri al
         if (_budgetProvider != null) {
           _syncBudgets();
         }
-        
-        int budgetIndex = _budgets.indexWhere((b) => b.category == transaction.category);
+
+        int budgetIndex =
+            _budgets.indexWhere((b) => b.category == transaction.category);
         if (budgetIndex != -1) {
           Budget existingBudget = _budgets[budgetIndex];
           Budget updatedBudget = Budget(
@@ -247,40 +194,31 @@ class TransactionProvider with ChangeNotifier {
             startDate: existingBudget.startDate,
             endDate: existingBudget.endDate,
           );
-          
-          // SQLite veritabanını güncelle
-          // await _dbHelper.updateBudgetSpent(
-          //  transaction.category, 
-          //  existingBudget.spent - transaction.amount
-          // );
-          
+
           // Belleği güncelle
           _budgets[budgetIndex] = updatedBudget;
-          
+
           // BudgetProvider'ı da güncelle
           if (_budgetProvider != null) {
             _budgetProvider!.updateBudget(updatedBudget);
           }
         }
       }
-      
+
       notifyListeners();
     }
   }
-  
+
   // Bütçeyi sil
   Future<void> deleteBudget(String id) async {
-    // SQLite veritabanından sil
-    // await _dbHelper.deleteBudget(id);
-    
     // Belleğden sil
     _budgets.removeWhere((budget) => budget.id == id);
-    
+
     // BudgetProvider'ı da güncelle
     if (_budgetProvider != null && id.isNotEmpty) {
       _budgetProvider!.deleteBudget(id);
     }
-    
+
     notifyListeners();
   }
-} 
+}

@@ -3,7 +3,7 @@ import '../models/budget.dart';
 import '../db/database_helper.dart';
 
 class BudgetProvider with ChangeNotifier {
-  // final DatabaseHelper _dbHelper = DatabaseHelper();
+  final DatabaseHelper _dbHelper = DatabaseHelper();
   List<Budget> _budgets = [];
 
   List<Budget> get budgets => _budgets;
@@ -14,36 +14,30 @@ class BudgetProvider with ChangeNotifier {
   }
 
   Future<void> loadBudgets() async {
-    // SQLite kullanımı kapalı olduğu için örnek veriler kullanıyoruz
-    // _budgets = await _dbHelper.getBudgets();
-    
-    // Not: Artık örnek verileri burada tanımlamıyoruz
-    // TransactionProvider'dan senkronize edilerek alınacak
+    _budgets = await _dbHelper.getBudgets();
     notifyListeners();
   }
 
   Future<void> addBudget(Budget budget) async {
-    // SQLite veritabanına kaydet
-    // await _dbHelper.insertBudget(budget);
-    
-    // Belleğe ekle
-    int existingIndex = _budgets.indexWhere((b) => b.category == budget.category);
-    if (existingIndex != -1) {
-      _budgets[existingIndex] = budget;
-    } else {
-      _budgets.add(budget);
+    try {
+      await _dbHelper.insertBudget(budget);
+      int existingIndex =
+          _budgets.indexWhere((b) => b.category == budget.category);
+      if (existingIndex != -1) {
+        _budgets[existingIndex] = budget;
+      } else {
+        _budgets.add(budget);
+      }
+      notifyListeners();
+    } catch (e) {
+      print('Bütçe eklenirken hata: $e');
+      rethrow;
     }
-    
-    notifyListeners();
   }
 
   Future<void> deleteBudget(String id) async {
-    // SQLite veritabanından sil
-    // await _dbHelper.deleteBudget(id);
-    
-    // Belleğden sil
+    await _dbHelper.deleteBudget(id);
     _budgets.removeWhere((budget) => budget.id == id);
-    
     notifyListeners();
   }
 
@@ -75,13 +69,13 @@ class BudgetProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // Tüm bütçeleri temizle ve yenilerini ayarla
   void setBudgets(List<Budget> budgets) {
     _budgets = [...budgets];
     notifyListeners();
   }
-  
+
   // Kategori adına göre bütçe bilgisini al
   Budget? getBudgetForCategory(String category) {
     try {
@@ -90,4 +84,4 @@ class BudgetProvider with ChangeNotifier {
       return null;
     }
   }
-} 
+}

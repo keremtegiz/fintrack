@@ -27,55 +27,13 @@ class MyApp extends StatelessWidget {
     // Önce BudgetProvider oluşturuyoruz ve sonra TransactionProvider'a veriyoruz
     final budgetProvider = BudgetProvider();
     final transactionProvider = TransactionProvider();
-    
+
     // Provider'lar arası entegrasyonu başlatma
     WidgetsBinding.instance.addPostFrameCallback((_) {
       transactionProvider.setBudgetProvider(budgetProvider);
-      
-      // Örnek veriler tanımlayalım
-      // Bütçeler
-      final budgets = [
-        Budget(
-          id: '1',
-          category: 'Market',
-          limit: 1000,
-          spent: 450,
-          startDate: DateTime.now().subtract(const Duration(days: 15)),
-          endDate: DateTime.now().add(const Duration(days: 15)),
-        ),
-        Budget(
-          id: '2',
-          category: 'Eğlence',
-          limit: 500,
-          spent: 100,
-          startDate: DateTime.now().subtract(const Duration(days: 15)),
-          endDate: DateTime.now().add(const Duration(days: 15)),
-        ),
-        Budget(
-          id: '3',
-          category: 'Ulaşım',
-          limit: 300,
-          spent: 150,
-          startDate: DateTime.now().subtract(const Duration(days: 15)),
-          endDate: DateTime.now().add(const Duration(days: 15)),
-        ),
-        Budget(
-          id: '4',
-          category: 'Kuaför',
-          limit: 1000,
-          spent: 200,
-          startDate: DateTime.now().subtract(const Duration(days: 15)),
-          endDate: DateTime.now().add(const Duration(days: 15)),
-        ),
-      ];
-      
-      // Bütçeleri her iki provider'a da ekle
-      budgetProvider.setBudgets(budgets);
-      
-      // TransactionProvider'ın içindeki _budgets listesini de güncelle
       transactionProvider.syncBudgetsFromProvider();
     });
-    
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
@@ -95,7 +53,8 @@ class MyApp extends StatelessWidget {
           cardTheme: CardTheme(
             elevation: 4,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           appBarTheme: const AppBarTheme(
             elevation: 0,
@@ -145,20 +104,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   static const List<BottomNavigationBarItem> _navItems = [
     BottomNavigationBarItem(
-      icon: Icon(Icons.home_outlined),
-      activeIcon: Icon(Icons.home),
-      label: "Ana Sayfa"
-    ),
+        icon: Icon(Icons.home_outlined),
+        activeIcon: Icon(Icons.home),
+        label: "Ana Sayfa"),
     BottomNavigationBarItem(
-      icon: Icon(Icons.account_balance_wallet_outlined),
-      activeIcon: Icon(Icons.account_balance_wallet),
-      label: "Bütçe"
-    ),
+        icon: Icon(Icons.account_balance_wallet_outlined),
+        activeIcon: Icon(Icons.account_balance_wallet),
+        label: "Bütçe"),
     BottomNavigationBarItem(
-      icon: Icon(Icons.settings_outlined),
-      activeIcon: Icon(Icons.settings),
-      label: "Kur"
-    ),
+        icon: Icon(Icons.settings_outlined),
+        activeIcon: Icon(Icons.settings),
+        label: "Kur"),
   ];
 
   void _onItemTapped(int index) {
